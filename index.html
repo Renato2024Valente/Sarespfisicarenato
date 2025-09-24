@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SARESP 2024 — Física (2ª série EM) • 4 atividades interativas</title>
+<style>
+  :root{
+    --bg1:#0b1220; --bg2:#0a0f1a; --card:#10192b; --border:#1c2740; --ink:#eaf1ff; --muted:#a9b7d9;
+    --accent:#78b4ff; --right:#22c55e; --wrong:#f97316; --shadow:0 20px 60px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{font:500 16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial; color:var(--ink);
+       background: radial-gradient(1200px 800px at 18% 20%, var(--bg1), var(--bg2) 60%);}  
+  .wrap{max-width:1100px;margin:0 auto;padding:20px 16px 80px}
+  header{display:flex;gap:16px;align-items:center;margin:8px 0 18px}
+  header .h1{font-weight:800;font-size:clamp(18px,3vw,26px)}
+  header .tag{font-size:12px;padding:.25rem .55rem;border:1px solid var(--border);border-radius:.6rem;background:rgba(255,255,255,.06)}
+  .bar{display:flex;gap:12px;flex-wrap:wrap;margin:6px 0 16px}
+  .btn{cursor:pointer; border:1px solid var(--border); background:rgba(255,255,255,.06); color:var(--ink); font-weight:700;
+       padding:.6rem .9rem; border-radius:.8rem; box-shadow:var(--shadow); transition:transform .06s ease}
+  .btn:hover{transform:translateY(-1px)}
+  .btn.primary{background:linear-gradient(180deg,#2a3a64,#1c2b50); border-color:#2b3b63}
+
+  .grid{display:grid;grid-template-columns:1fr;gap:16px}
+  @media (min-width:960px){ .grid{grid-template-columns:1fr 1fr} }
+
+  .card{position:relative;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02)); border:1px solid var(--border);
+        border-radius:16px; padding:16px; box-shadow:var(--shadow)}
+  .card h3{margin:0 0 6px;font-size:18px}
+  .ctx{color:var(--muted); font-size:14px; margin-bottom:10px}
+  .opts{display:grid; gap:10px; margin:10px 0 8px}
+  .opt{display:flex;gap:10px;align-items:flex-start;padding:10px;border:1px solid var(--border); border-radius:12px; background:rgba(255,255,255,.03)}
+  .opt input{margin-top:3px}
+  .opt.correct{outline:2px solid color-mix(in oklab, var(--right) 60%, white 0%)}
+  .opt.wrong{outline:2px solid color-mix(in oklab, var(--wrong) 60%, white 0%)}
+
+  .ans{display:none;margin-top:8px;padding:10px;border:1px dashed var(--border); border-radius:10px; background:rgba(120,180,255,.08)}
+  .ans .badge{display:inline-block; padding:.2rem .5rem; border-radius:.6rem; background:rgba(34,197,94,.18); border:1px solid rgba(34,197,94,.45); font-weight:800}
+  .ans .explain{margin-top:6px; color:var(--ink)}
+  .foot{margin-top:4px;font-size:12px;color:var(--muted)}
+
+  .score{position:sticky; bottom:16px; display:flex; justify-content:center; margin-top:16px}
+  .score .chip{background:rgba(255,255,255,.06); border:1px solid var(--border); border-radius:999px; display:inline-flex; gap:10px; align-items:center; padding:.5rem .9rem; box-shadow:var(--shadow)}
+  .score .ok{color:var(--right); font-weight:800}
+  .score .no{color:var(--wrong); font-weight:800}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="h1">SARESP 2024 — Física (2ª série EM)</div>
+      <span class="tag">4 atividades • múltipla escolha</span>
+      <span class="tag">com resolução detalhada</span>
+    </header>
+
+    <div class="bar">
+      <button class="btn primary" id="btnCorrigir">Corrigir marcadas</button>
+      <button class="btn" id="btnMostrarGabarito">Mostrar gabarito</button>
+      <button class="btn" id="btnOcultarGabarito">Ocultar resoluções</button>
+      <button class="btn" id="btnReset">Limpar respostas</button>
+    </div>
+
+    <section class="grid" id="quiz"></section>
+
+    <div class="score"><div class="chip">Acertos: <span class="ok" id="ok">0</span> • Erros: <span class="no" id="no">0</span></div></div>
+
+    <p class="foot">Material de apoio didático baseado no compilado enviado (SARESP 2024 – 2ª série EM). Cenas e alternativas foram reescritas para uso pedagógico; confira o caderno oficial para o texto integral.</p>
+  </div>
+
+<script>
+  const DATA = [
+    {
+      id:'q1',
+      titulo:'Escalas de temperatura (Fahrenheit ↔ Celsius)',
+      contexto:'Previsões do tempo, culinária e manuais técnicos dos EUA usam °F. Saber converter evita erros em laboratório e no dia a dia.',
+      enunciado:'Na escala Fahrenheit, quais são as temperaturas de congelamento e de ebulição da água ao nível do mar?',
+      alternativas:[
+        '35 °C , 212 °F',
+        '32 °F , 230 °C',
+        '32 °F , 212 °F',
+        '31 °C , 212 °C',
+        'Nenhuma das alternativas'
+      ],
+      correta:2,
+      resolucao:`Na escala Fahrenheit, os pontos fixos clássicos são 32 °F (congelamento) e 212 °F (ebulição), separados por 180 divisões. Logo, a alternativa correta é <b>32 °F e 212 °F</b>.`,
+      detalhe:'SARESP 2024 — 2ª série EM (Escalas térmicas).'
+    },
+    {
+      id:'q2',
+      titulo:'Conversão de temperatura (°C → °F)',
+      contexto:'Equipamentos importados frequentemente usam °F. Em biologia, 37 °C (temperatura corporal) deve ser corretamente programada em °F.',
+      enunciado:'Para programar o termostato a 37 °C, qual valor em Fahrenheit deve ser inserido? (Use F = (9/5)·C + 32).',
+      alternativas:[
+        '96,8 °F',
+        '98,6 °F',
+        '100,4 °C',
+        '77,0 °F'
+      ],
+      correta:1,
+      resolucao:`Aplicando F = (9/5)·C + 32: 9·37 = 333; 333/5 = 66,6; 66,6 + 32 = <b>98,6 °F</b>.`,
+      detalhe:'SARESP 2024 — 2ª série EM (Conversão de escalas).'
+    },
+    {
+      id:'q3',
+      titulo:'Isolamento térmico: condução, convecção e radiação',
+      contexto:'Garrafas térmicas e caixas de vacina reduzem trocas de calor; vácuo e superfícies refletoras minimizam perdas.',
+      enunciado:'Sobre a propagação de calor em sistemas de isolamento térmico, assinale a alternativa correta.',
+      alternativas:[
+        'A garrafa térmica reduziria as trocas de calor usando somente condução.',
+        'Em fluidos, o modo principal de transferência de calor seria a condução.',
+        'Mesmo em sistemas “isolados”, a temperatura pode mudar por irradiação.',
+        'Utiliza-se convecção para limitar as trocas de calor.'
+      ],
+      correta:2,
+      resolucao:`Condução e convecção são minimizadas pelo vácuo entre paredes. A <b>radiação</b> não precisa de meio material e ainda ocorre; logo, mesmo “isolados”, os sistemas podem aquecer/resfriar por <b>irradiação</b>.`,
+      detalhe:'SARESP 2024 — 2ª série EM (Transferência de calor).'
+    },
+    {
+      id:'q4',
+      titulo:'Calorimetria: temperatura de equilíbrio',
+      contexto:'Misturar bebidas a temperaturas distintas (ex.: café + leite) leva a um equilíbrio que depende de massas e calores específicos.',
+      enunciado:'Misturam-se A (300 g, 70 °C) e B (200 g, 20 °C) em recipiente isolado; ambos com o mesmo calor específico. Qual a temperatura de equilíbrio?',
+      alternativas:[
+        '50 °C', '20 °C', '52 °F', '98 °C', 'Nenhuma das alternativas'
+      ],
+      correta:0,
+      resolucao:`No sistema isolado: m_A c (T_A - T_eq) = m_B c (T_eq - T_B). 300(70 - T_eq) = 200(T_eq - 20) → 21000 - 300T_eq = 200T_eq - 4000 → 25000 = 500T_eq → <b>T_eq = 50 °C</b>.`,
+      detalhe:'SARESP 2024 — 2ª série EM (Calorimetria).'
+    }
+  ];
+
+  const quiz = document.getElementById('quiz');
+  const ok = document.getElementById('ok');
+  const no = document.getElementById('no');
+
+  // Render
+  DATA.forEach((q, qi)=>{
+    const card = document.createElement('article');
+    card.className = 'card';
+    card.innerHTML = `
+      <h3>${qi+1}) ${q.titulo}</h3>
+      <div class="ctx">${q.contexto}</div>
+      <div class="enun">${q.enunciado}</div>
+      <div class="opts" role="group" aria-labelledby="${q.id}">
+        ${q.alternativas.map((alt,i)=>`
+          <label class="opt"><input type="radio" name="${q.id}" value="${i}"> <span>(${String.fromCharCode(65+i)}) ${alt}</span></label>
+        `).join('')}
+      </div>
+      <div class="bar">
+        <button class="btn show">Mostrar resposta</button>
+        <button class="btn hide" style="display:none">Ocultar resposta</button>
+      </div>
+      <div class="ans">
+        <div><span class="badge">Gabarito: (${String.fromCharCode(65+q.correta)})</span></div>
+        <div class="explain">${q.resolucao}</div>
+        <div class="ctx" style="margin-top:8px">Contextualização: ${q.detalhe}</div>
+      </div>
+    `;
+
+    // Show/Hide answer
+    const ans = card.querySelector('.ans');
+    const show = card.querySelector('.show');
+    const hide = card.querySelector('.hide');
+    show.addEventListener('click', ()=>{ ans.style.display='block'; show.style.display='none'; hide.style.display='inline-flex'; });
+    hide.addEventListener('click', ()=>{ ans.style.display='none'; hide.style.display='none'; show.style.display='inline-flex'; });
+
+    quiz.appendChild(card);
+  });
+
+  // Corrigir marcadas
+  function corrigir(){
+    let ac=0, er=0;
+    document.querySelectorAll('.card').forEach((card, idx)=>{
+      const q = DATA[idx];
+      const opts = [...card.querySelectorAll('label.opt')];
+      opts.forEach(o=>o.classList.remove('correct','wrong'));
+      const sel = card.querySelector('input[type="radio"]:checked');
+      if(!sel){ return; }
+      const v = +sel.value;
+      if(v===q.correta){ ac++; opts[v].classList.add('correct'); }
+      else { er++; opts[v].classList.add('wrong'); opts[q.correta].classList.add('correct'); }
+    });
+    ok.textContent = ac; no.textContent = er;
+  }
+
+  document.getElementById('btnCorrigir').addEventListener('click', corrigir);
+  document.getElementById('btnMostrarGabarito').addEventListener('click', ()=>{
+    document.querySelectorAll('.card .ans').forEach(a=> a.style.display='block');
+    document.querySelectorAll('.card .show').forEach(b=> b.style.display='none');
+    document.querySelectorAll('.card .hide').forEach(b=> b.style.display='inline-flex');
+  });
+  document.getElementById('btnOcultarGabarito').addEventListener('click', ()=>{
+    document.querySelectorAll('.card .ans').forEach(a=> a.style.display='none');
+    document.querySelectorAll('.card .hide').forEach(b=> b.style.display='none');
+    document.querySelectorAll('.card .show').forEach(b=> b.style.display='inline-flex');
+  });
+  document.getElementById('btnReset').addEventListener('click', ()=>{
+    document.querySelectorAll('input[type="radio"]').forEach(i=> i.checked=false);
+    document.querySelectorAll('.opt').forEach(o=> o.classList.remove('correct','wrong'));
+    ok.textContent = '0'; no.textContent = '0';
+  });
+</script>
+</body>
+</html>
