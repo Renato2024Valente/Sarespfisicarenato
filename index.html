@@ -26,7 +26,7 @@
   .grid{display:grid;grid-template-columns:1fr;gap:16px}
   @media (min-width:960px){ .grid{grid-template-columns:1fr 1fr} }
 
-  .card{position:relative;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02)); border:1px solid var(--border);
+  .card{background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02)); border:1px solid var(--border);
         border-radius:16px; padding:16px; box-shadow:var(--shadow)}
   .card h3{margin:0 0 6px;font-size:18px}
   .ctx{color:var(--muted); font-size:14px; margin-bottom:10px}
@@ -45,6 +45,22 @@
   .score .chip{background:rgba(255,255,255,.06); border:1px solid var(--border); border-radius:999px; display:inline-flex; gap:10px; align-items:center; padding:.5rem .9rem; box-shadow:var(--shadow)}
   .score .ok{color:var(--right); font-weight:800}
   .score .no{color:var(--wrong); font-weight:800}
+
+  /* Coluna pro 3D (nunca sobrepõe texto) */
+  .card-inner{
+    display:grid;
+    grid-template-columns: 1fr 180px;
+    gap:16px;
+    align-items:start;
+  }
+  .emoxam3d{
+    width:100%; aspect-ratio:1/1; border:1px solid var(--border); border-radius:12px;
+    background:rgba(255,255,255,.03); overflow:hidden;
+  }
+  @media (max-width:680px){
+    .card-inner{ grid-template-columns: 1fr; }
+    .emoxam3d{ order: 2; margin-top:8px; }
+  }
 </style>
 </head>
 <body>
@@ -69,138 +85,383 @@
     <p class="foot">Material de apoio didático baseado no compilado enviado (SARESP 2024 – 2ª série EM). Cenas e alternativas foram reescritas para uso pedagógico; confira o caderno oficial para o texto integral.</p>
   </div>
 
+  <!-- Three.js (CDN) -->
+  <script src="https://unpkg.com/three@0.157.0/build/three.min.js"></script>
+
 <script>
-  const DATA = [
-    {
-      id:'q1',
-      titulo:'Escalas de temperatura (Fahrenheit ↔ Celsius)',
-      contexto:'Previsões do tempo, culinária e manuais técnicos dos EUA usam °F. Saber converter evita erros em laboratório e no dia a dia.',
-      enunciado:'Na escala Fahrenheit, quais são as temperaturas de congelamento e de ebulição da água ao nível do mar?',
-      alternativas:[
-        '35 °C , 212 °F',
-        '32 °F , 230 °C',
-        '32 °F , 212 °F',
-        '31 °C , 212 °C',
-        'Nenhuma das alternativas'
-      ],
-      correta:2,
-      resolucao:`Na escala Fahrenheit, os pontos fixos clássicos são 32 °F (congelamento) e 212 °F (ebulição), separados por 180 divisões. Logo, a alternativa correta é <b>32 °F e 212 °F</b>.`,
-      detalhe:'SARESP 2024 — 2ª série EM (Escalas térmicas).'
-    },
-    {
-      id:'q2',
-      titulo:'Conversão de temperatura (°C → °F)',
-      contexto:'Equipamentos importados frequentemente usam °F. Em biologia, 37 °C (temperatura corporal) deve ser corretamente programada em °F.',
-      enunciado:'Para programar o termostato a 37 °C, qual valor em Fahrenheit deve ser inserido? (Use F = (9/5)·C + 32).',
-      alternativas:[
-        '96,8 °F',
-        '98,6 °F',
-        '100,4 °C',
-        '77,0 °F'
-      ],
-      correta:1,
-      resolucao:`Aplicando F = (9/5)·C + 32: 9·37 = 333; 333/5 = 66,6; 66,6 + 32 = <b>98,6 °F</b>.`,
-      detalhe:'SARESP 2024 — 2ª série EM (Conversão de escalas).'
-    },
-    {
-      id:'q3',
-      titulo:'Isolamento térmico: condução, convecção e radiação',
-      contexto:'Garrafas térmicas e caixas de vacina reduzem trocas de calor; vácuo e superfícies refletoras minimizam perdas.',
-      enunciado:'Sobre a propagação de calor em sistemas de isolamento térmico, assinale a alternativa correta.',
-      alternativas:[
-        'A garrafa térmica reduziria as trocas de calor usando somente condução.',
-        'Em fluidos, o modo principal de transferência de calor seria a condução.',
-        'Mesmo em sistemas “isolados”, a temperatura pode mudar por irradiação.',
-        'Utiliza-se convecção para limitar as trocas de calor.'
-      ],
-      correta:2,
-      resolucao:`Condução e convecção são minimizadas pelo vácuo entre paredes. A <b>radiação</b> não precisa de meio material e ainda ocorre; logo, mesmo “isolados”, os sistemas podem aquecer/resfriar por <b>irradiação</b>.`,
-      detalhe:'SARESP 2024 — 2ª série EM (Transferência de calor).'
-    },
-    {
-      id:'q4',
-      titulo:'Calorimetria: temperatura de equilíbrio',
-      contexto:'Misturar bebidas a temperaturas distintas (ex.: café + leite) leva a um equilíbrio que depende de massas e calores específicos.',
-      enunciado:'Misturam-se A (300 g, 70 °C) e B (200 g, 20 °C) em recipiente isolado; ambos com o mesmo calor específico. Qual a temperatura de equilíbrio?',
-      alternativas:[
-        '50 °C', '20 °C', '52 °F', '98 °C', 'Nenhuma das alternativas'
-      ],
-      correta:0,
-      resolucao:`No sistema isolado: m_A c (T_A - T_eq) = m_B c (T_eq - T_B). 300(70 - T_eq) = 200(T_eq - 20) → 21000 - 300T_eq = 200T_eq - 4000 → 25000 = 500T_eq → <b>T_eq = 50 °C</b>.`,
-      detalhe:'SARESP 2024 — 2ª série EM (Calorimetria).'
-    }
-  ];
+/* ===================== DADOS ===================== */
+const DATA = [
+  { id:'q1', titulo:'Escalas de temperatura (Fahrenheit ↔ Celsius)', contexto:'Previsões do tempo, culinária e manuais técnicos dos EUA usam °F. Saber converter evita erros em laboratório e no dia a dia.',
+    enunciado:'Na escala Fahrenheit, quais são as temperaturas de congelamento e de ebulição da água ao nível do mar?',
+    alternativas:['35 °C , 212 °F','32 °F , 230 °C','32 °F , 212 °F','31 °C , 212 °C','Nenhuma das alternativas'],
+    correta:2, resolucao:`Na escala Fahrenheit, os pontos fixos clássicos são 32 °F (congelamento) e 212 °F (ebulição), separados por 180 divisões. Logo, a alternativa correta é <b>32 °F e 212 °F</b>.`,
+    detalhe:'SARESP 2024 — 2ª série EM (Escalas térmicas).'
+  },
+  { id:'q2', titulo:'Conversão de temperatura (°C → °F)', contexto:'Equipamentos importados frequentemente usam °F. Em biologia, 37 °C (temperatura corporal) deve ser corretamente programada em °F.',
+    enunciado:'Para programar o termostato a 37 °C, qual valor em Fahrenheit deve ser inserido? (Use F = (9/5)·C + 32).',
+    alternativas:['96,8 °F','98,6 °F','100,4 °C','77,0 °F'],
+    correta:1, resolucao:`Aplicando F = (9/5)·C + 32: 9·37 = 333; 333/5 = 66,6; 66,6 + 32 = <b>98,6 °F</b>.`,
+    detalhe:'SARESP 2024 — 2ª série EM (Conversão de escalas).'
+  },
+  { id:'q3', titulo:'Isolamento térmico: condução, convecção e radiação', contexto:'Garrafas térmicas e caixas de vacina reduzem trocas de calor; vácuo e superfícies refletoras minimizam perdas.',
+    enunciado:'Sobre a propagação de calor em sistemas de isolamento térmico, assinale a alternativa correta.',
+    alternativas:['A garrafa térmica reduziria as trocas de calor usando somente condução.','Em fluidos, o modo principal de transferência de calor seria a condução.','Mesmo em sistemas “isolados”, a temperatura pode mudar por irradiação.','Utiliza-se convecção para limitar as trocas de calor.'],
+    correta:2, resolucao:`Condução e convecção são minimizadas pelo vácuo entre paredes. A <b>radiação</b> não precisa de meio material e ainda ocorre; logo, mesmo “isolados”, os sistemas podem aquecer/resfriar por <b>irradiação</b>.`,
+    detalhe:'SARESP 2024 — 2ª série EM (Transferência de calor).'
+  },
+  { id:'q4', titulo:'Calorimetria: temperatura de equilíbrio', contexto:'Misturar bebidas a temperaturas distintas (ex.: café + leite) leva a um equilíbrio que depende de massas e calores específicos.',
+    enunciado:'Misturam-se A (300 g, 70 °C) e B (200 g, 20 °C) em recipiente isolado; ambos com o mesmo calor específico. Qual a temperatura de equilíbrio?',
+    alternativas:['50 °C','20 °C','52 °F','98 °C','Nenhuma das alternativas'],
+    correta:0, resolucao:`No sistema isolado: m_A c (T_A - T_eq) = m_B c (T_eq - T_B). 300(70 - T_eq) = 200(T_eq - 20) → 21000 - 300T_eq = 200T_eq - 4000 → 25000 = 500T_eq → <b>T_eq = 50 °C</b>.`,
+    detalhe:'SARESP 2024 — 2ª série EM (Calorimetria).'
+  }
+];
 
-  const quiz = document.getElementById('quiz');
-  const ok = document.getElementById('ok');
-  const no = document.getElementById('no');
+const quiz = document.getElementById('quiz');
+const ok   = document.getElementById('ok');
+const no   = document.getElementById('no');
 
-  // Render
-  DATA.forEach((q, qi)=>{
-    const card = document.createElement('article');
-    card.className = 'card';
-    card.innerHTML = `
-      <h3>${qi+1}) ${q.titulo}</h3>
-      <div class="ctx">${q.contexto}</div>
-      <div class="enun">${q.enunciado}</div>
-      <div class="opts" role="group" aria-labelledby="${q.id}">
-        ${q.alternativas.map((alt,i)=>`
-          <label class="opt"><input type="radio" name="${q.id}" value="${i}"> <span>(${String.fromCharCode(65+i)}) ${alt}</span></label>
-        `).join('')}
-      </div>
-      <div class="bar">
-        <button class="btn show">Mostrar resposta</button>
-        <button class="btn hide" style="display:none">Ocultar resposta</button>
-      </div>
-      <div class="ans">
-        <div><span class="badge">Gabarito: (${String.fromCharCode(65+q.correta)})</span></div>
-        <div class="explain">${q.resolucao}</div>
-        <div class="ctx" style="margin-top:8px">Contextualização: ${q.detalhe}</div>
-      </div>
-    `;
-
-    // Show/Hide answer
-    const ans = card.querySelector('.ans');
-    const show = card.querySelector('.show');
-    const hide = card.querySelector('.hide');
-    show.addEventListener('click', ()=>{ ans.style.display='block'; show.style.display='none'; hide.style.display='inline-flex'; });
-    hide.addEventListener('click', ()=>{ ans.style.display='none'; hide.style.display='none'; show.style.display='inline-flex'; });
-
-    quiz.appendChild(card);
-  });
-
-  // Corrigir marcadas
-  function corrigir(){
-    let ac=0, er=0;
-    document.querySelectorAll('.card').forEach((card, idx)=>{
-      const q = DATA[idx];
-      const opts = [...card.querySelectorAll('label.opt')];
-      opts.forEach(o=>o.classList.remove('correct','wrong'));
-      const sel = card.querySelector('input[type="radio"]:checked');
-      if(!sel){ return; }
-      const v = +sel.value;
-      if(v===q.correta){ ac++; opts[v].classList.add('correct'); }
-      else { er++; opts[v].classList.add('wrong'); opts[q.correta].classList.add('correct'); }
-    });
-    ok.textContent = ac; no.textContent = er;
+/* =============== EMOXAM 3D (Three.js) ================= */
+class Emoxam3D {
+  constructor(container){
+    this.container = container;
+    this.state = 'look'; // 'look' | 'smile' | 'cry'
+    this._time = 0;
+    this._blinkTimer = 0;
+    this._nextBlink = 2 + Math.random()*2.5;
+    this._tears = [];
+    this._init();
+    this._onResize();
+    window.addEventListener('resize', ()=>this._onResize());
+    this._animate = this._animate.bind(this);
+    requestAnimationFrame(this._animate);
   }
 
-  document.getElementById('btnCorrigir').addEventListener('click', corrigir);
-  document.getElementById('btnMostrarGabarito').addEventListener('click', ()=>{
-    document.querySelectorAll('.card .ans').forEach(a=> a.style.display='block');
-    document.querySelectorAll('.card .show').forEach(b=> b.style.display='none');
-    document.querySelectorAll('.card .hide').forEach(b=> b.style.display='inline-flex');
+  _init(){
+    const w = this.container.clientWidth || 180;
+    const h = this.container.clientHeight || 180;
+
+    this.scene = new THREE.Scene();
+    this.camera = new THREE.PerspectiveCamera(45, w/h, 0.1, 100);
+    this.camera.position.set(0, 0, 3.2);
+
+    this.renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+    this.renderer.setSize(w, h);
+    this.container.appendChild(this.renderer.domElement);
+
+    // Luz
+    const amb = new THREE.AmbientLight(0xffffff, 0.8);
+    const dir = new THREE.DirectionalLight(0xffffff, 0.9);
+    dir.position.set(3,4,5);
+    this.scene.add(amb, dir);
+
+    // Grupo principal
+    this.face = new THREE.Group();
+    this.scene.add(this.face);
+
+    // Cabeça
+    const headGeo = new THREE.SphereGeometry(1, 48, 48);
+    const headMat = new THREE.MeshStandardMaterial({ color: 0xffd166, roughness: 0.45, metalness: 0.05 });
+    this.head = new THREE.Mesh(headGeo, headMat);
+    this.face.add(this.head);
+
+    // ---------- OLHOS (esclera branca, íris azul, pupila preta) ----------
+    this.eyes = new THREE.Group();
+    this.face.add(this.eyes);
+
+    const mkEye = (x) => {
+      const g = new THREE.Group();
+
+      const sclera = new THREE.Mesh(
+        new THREE.CircleGeometry(0.28, 64),
+        new THREE.MeshBasicMaterial({ color: 0xffffff })
+      );
+      sclera.position.set(0, 0, 1.12);
+      g.add(sclera);
+
+      const moving = new THREE.Group(); g.add(moving);
+
+      const iris = new THREE.Mesh(
+        new THREE.CircleGeometry(0.17, 64),
+        new THREE.MeshBasicMaterial({ color: 0x3b82f6 })
+      );
+      iris.position.set(0, 0, 1.121);
+      moving.add(iris);
+
+      const pupil = new THREE.Mesh(
+        new THREE.CircleGeometry(0.065, 48),
+        new THREE.MeshBasicMaterial({ color: 0x111111 })
+      );
+      pupil.position.set(0, 0, 1.122);
+      moving.add(pupil);
+
+      const shine = new THREE.Mesh(
+        new THREE.CircleGeometry(0.035, 32),
+        new THREE.MeshBasicMaterial({ color: 0xffffff })
+      );
+      shine.position.set(0.07, 0.08, 1.123);
+      moving.add(shine);
+
+      g.userData = { moving };
+      g.position.set(x, 0.25, 0);
+      return g;
+    };
+
+    this.eyeL = mkEye(-0.48);
+    this.eyeR = mkEye( 0.48);
+    this.eyes.add(this.eyeL, this.eyeR);
+
+    // ---------- BOCA (contorno preto mais fino + miolo vermelho) ----------
+    this.mouthGroup = new THREE.Group();
+    this.face.add(this.mouthGroup);
+    this._updateMouth(); // estado inicial
+
+    // ---------- LÁGRIMAS ----------
+    this.tearMat = new THREE.MeshBasicMaterial({ color: 0x60a5fa });
+    this.tearGeo = new THREE.SphereGeometry(0.05, 16, 16);
+  }
+
+  // parâmetros por estado (largura, curvatura e espessura)
+  _mouthParams(){
+    if(this.state==='smile') return { half:0.54, ctrlY: 0.12, thick:0.072, tongue:0.24, yoff: 0.02 };
+    if(this.state==='cry')   return { half:0.54, ctrlY:-0.42, thick:0.070, tongue:0.18, yoff:-0.02 };
+    return                    { half:0.44, ctrlY:-0.20, thick:0.055, tongue:0.18, yoff: 0.00 }; // look
+  }
+
+  // curva da boca (sempre à frente do rosto)
+  _curveFor(){
+    const p = this._mouthParams();
+    const z = 1.24; // na frente dos olhos/rosto
+    const yBase = -0.28;
+    const p0 = new THREE.Vector3(-p.half, yBase, z);
+    const p1 = new THREE.Vector3( 0.00, p.ctrlY, z+0.01);
+    const p2 = new THREE.Vector3( p.half,  yBase, z);
+    return new THREE.QuadraticBezierCurve3(p0,p1,p2);
+  }
+
+  _clearGroup(g){
+    while(g.children.length){
+      const m = g.children.pop();
+      if(m.geometry) m.geometry.dispose();
+      if(m.material){
+        if(Array.isArray(m.material)) m.material.forEach(mm=>mm.dispose&&mm.dispose());
+        else m.material.dispose && m.material.dispose();
+      }
+    }
+  }
+
+  _updateMouth(){
+    this._clearGroup(this.mouthGroup);
+
+    const params = this._mouthParams();
+    const curve  = this._curveFor();
+
+    // contorno preto (fino) — evita “faixa gigante”
+    const tubeBorder = new THREE.Mesh(
+      new THREE.TubeGeometry(curve, 72, params.thick, 24, false),
+      new THREE.MeshBasicMaterial({ color: 0x111111, depthTest:false })
+    );
+    tubeBorder.renderOrder = 1001;
+    this.mouthGroup.add(tubeBorder);
+
+    // miolo vermelho (língua) no centro do arco
+    const mid = curve.getPoint(0.5);
+    const tongue = new THREE.Mesh(
+      new THREE.CircleGeometry(params.tongue, 48),
+      new THREE.MeshBasicMaterial({ color: 0xef4444, depthTest:false })
+    );
+    tongue.position.set(mid.x, mid.y + params.yoff, mid.z - 0.002);
+    tongue.renderOrder = 1000;
+    this.mouthGroup.add(tongue);
+  }
+
+  setState(s){
+    if(this.state===s) return;
+    this.state = s;
+    this._updateMouth();
+
+    if(s!=='cry'){
+      this._tears.forEach(t=>{ this.face.remove(t.mesh); t.mesh.geometry.dispose(); t.mesh.material.dispose && t.mesh.material.dispose(); });
+      this._tears = [];
+    }
+  }
+
+  _spawnTear(side='L'){
+    const mesh = new THREE.Mesh(this.tearGeo, this.tearMat.clone());
+    mesh.position.set(side==='L' ? -0.35 : 0.35, 0.12, 1.26);
+    const vel = 0.55 + Math.random()*0.25;
+    this.face.add(mesh);
+    this._tears.push({ mesh, v: vel, life: 1.1 });
+  }
+
+  _blink(dt){
+    this._blinkTimer += dt;
+    if(this._blinkTimer >= this._nextBlink){
+      const dur = 0.12;
+      let t = 0, elapsed = 0, last = performance.now();
+      const doBlink = ()=>{
+        const now = performance.now(), d = (now - last)/1000; last = now;
+        elapsed += d; t = Math.min(elapsed/dur, 1);
+        const s = 1 - 0.95*Math.sin(Math.PI * t);
+        this.eyeL.scale.y = s; this.eyeR.scale.y = s;
+        if(t<1) requestAnimationFrame(doBlink);
+        else { this.eyeL.scale.y = 1; this.eyeR.scale.y = 1; }
+      };
+      requestAnimationFrame(doBlink);
+      this._blinkTimer = 0;
+      this._nextBlink = 2 + Math.random()*2.5;
+    }
+  }
+
+  _eyesLook(t){
+    const ampX = 0.09, ampY = 0.07;
+    const ox = Math.sin(t*1.6)*ampX;
+    const oy = Math.cos(t*1.9)*ampY;
+    this.eyeL.userData.moving.position.x = ox;
+    this.eyeL.userData.moving.position.y = oy;
+    this.eyeR.userData.moving.position.x = ox;
+    this.eyeR.userData.moving.position.y = oy;
+  }
+
+  _animate(){
+    const now = performance.now()/1000;
+    const dt  = Math.min(0.033, now - (this._last||now));
+    this._last = now;
+    this._time += dt;
+
+    this.face.position.y = Math.sin(this._time*1.2)*0.06;
+    this.face.rotation.y = Math.sin(this._time*0.7)*0.15;
+
+    this._eyesLook(this._time);
+    this._blink(dt);
+
+    if(this.state==='cry'){
+      if(Math.random()<0.05) this._spawnTear('L');
+      if(Math.random()<0.05) this._spawnTear('R');
+      this._tears.forEach(t=>{
+        t.life -= dt;
+        t.mesh.position.y -= t.v*dt;
+        t.mesh.material.opacity = Math.max(0, t.life/1.1);
+      });
+      this._tears = this._tears.filter(t=>{
+        const keep = (t.life>0) && (t.mesh.position.y > -0.9);
+        if(!keep){
+          this.face.remove(t.mesh);
+          t.mesh.geometry.dispose();
+          t.mesh.material.dispose && t.mesh.material.dispose();
+        }
+        return keep;
+      });
+    }
+
+    this.renderer.render(this.scene, this.camera);
+    requestAnimationFrame(this._animate);
+  }
+
+  _onResize(){
+    const w = this.container.clientWidth || 180;
+    const h = this.container.clientHeight || 180;
+    this.camera.aspect = w/h;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(w, h);
+  }
+}
+
+/* =============== RENDER QUIZ + EMOXAM ================= */
+const emoxams = [];
+
+DATA.forEach((q, qi)=>{
+  const card = document.createElement('article');
+  card.className = 'card';
+  card.innerHTML = `
+    <div class="card-inner">
+      <div class="content">
+        <h3>${qi+1}) ${q.titulo}</h3>
+        <div class="ctx">${q.contexto}</div>
+        <div class="enun">${q.enunciado}</div>
+        <div class="opts" role="group" aria-labelledby="${q.id}">
+          ${q.alternativas.map((alt,i)=>`
+            <label class="opt"><input type="radio" name="${q.id}" value="${i}"> <span>(${String.fromCharCode(65+i)}) ${alt}</span></label>
+          `).join('')}
+        </div>
+        <div class="bar">
+          <button class="btn show">Mostrar resposta</button>
+          <button class="btn hide" style="display:none">Ocultar resposta</button>
+        </div>
+        <div class="ans">
+          <div><span class="badge">Gabarito: (${String.fromCharCode(65+q.correta)})</span></div>
+          <div class="explain">${q.resolucao}</div>
+          <div class="ctx" style="margin-top:8px">Contextualização: ${q.detalhe}</div>
+        </div>
+      </div>
+      <div class="emoxam3d"></div>
+    </div>
+  `;
+
+  const ans  = card.querySelector('.ans');
+  const show = card.querySelector('.show');
+  const hide = card.querySelector('.hide');
+  show.addEventListener('click', ()=>{ ans.style.display='block'; show.style.display='none'; hide.style.display='inline-flex'; });
+  hide.addEventListener('click', ()=>{ ans.style.display='none'; hide.style.display='none'; show.style.display='inline-flex'; });
+
+  quiz.appendChild(card);
+
+  // inicia o rosto 3D
+  const container3D = card.querySelector('.emoxam3d');
+  const emo = new Emoxam3D(container3D);
+  emoxams.push(emo);
+});
+
+/* =============== LÓGICA DE CORREÇÃO ================= */
+function corrigir(){
+  let ac=0, er=0;
+  document.querySelectorAll('.card').forEach((card, idx)=>{
+    const q = DATA[idx];
+    const opts = [...card.querySelectorAll('label.opt')];
+    const sel = card.querySelector('input[type="radio"]:checked');
+
+    opts.forEach(o=>o.classList.remove('correct','wrong'));
+
+    if(!sel){
+      emoxams[idx].setState('look'); // sem resposta
+      return;
+    }
+    const v = +sel.value;
+    if(v===q.correta){
+      ac++; 
+      opts[v].classList.add('correct');
+      emoxams[idx].setState('smile');
+    } else {
+      er++; 
+      opts[v].classList.add('wrong');
+      opts[q.correta].classList.add('correct');
+      emoxams[idx].setState('cry');
+    }
   });
-  document.getElementById('btnOcultarGabarito').addEventListener('click', ()=>{
-    document.querySelectorAll('.card .ans').forEach(a=> a.style.display='none');
-    document.querySelectorAll('.card .hide').forEach(b=> b.style.display='none');
-    document.querySelectorAll('.card .show').forEach(b=> b.style.display='inline-flex');
-  });
-  document.getElementById('btnReset').addEventListener('click', ()=>{
-    document.querySelectorAll('input[type="radio"]').forEach(i=> i.checked=false);
-    document.querySelectorAll('.opt').forEach(o=> o.classList.remove('correct','wrong'));
-    ok.textContent = '0'; no.textContent = '0';
-  });
+  ok.textContent = ac; no.textContent = er;
+}
+
+document.getElementById('btnCorrigir').addEventListener('click', corrigir);
+
+document.getElementById('btnMostrarGabarito').addEventListener('click', ()=>{
+  document.querySelectorAll('.card .ans').forEach(a=> a.style.display='block');
+  document.querySelectorAll('.card .show').forEach(b=> b.style.display='none');
+  document.querySelectorAll('.card .hide').forEach(b=> b.style.display='inline-flex');
+});
+
+document.getElementById('btnOcultarGabarito').addEventListener('click', ()=>{
+  document.querySelectorAll('.card .ans').forEach(a=> a.style.display='none');
+  document.querySelectorAll('.card .hide').forEach(b=> b.style.display='none');
+  document.querySelectorAll('.card .show').forEach(b=> b.style.display='inline-flex');
+});
+
+document.getElementById('btnReset').addEventListener('click', ()=>{
+  document.querySelectorAll('input[type="radio"]').forEach(i=> i.checked=false);
+  document.querySelectorAll('.opt').forEach(o=> o.classList.remove('correct','wrong'));
+  emoxams.forEach(e=> e.setState('look'));
+  ok.textContent = '0'; no.textContent = '0';
+});
 </script>
 </body>
 </html>
